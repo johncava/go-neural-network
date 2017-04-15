@@ -2,10 +2,15 @@ package main
 
 import (
 	"fmt"
+	"image/color"
 	"math"
 	"math/rand"
 
 	"github.com/gonum/matrix/mat64"
+	"github.com/gonum/plot"
+	"github.com/gonum/plot/plotter"
+	"github.com/gonum/plot/vg"
+	"github.com/gonum/plot/vg/draw"
 )
 
 //Applies the sigmoid function to each element of the matrix
@@ -47,14 +52,27 @@ func averageError(m *mat64.Dense) float64 {
 	return avg
 }
 
+func createPoints(a []float64) plotter.XYs {
+	pts := make(plotter.XYs, len(a))
+	for i := range a {
+		pts[i].X = float64(i)
+		pts[i].Y = a[i]
+		fmt.Print(i, " \n")
+	}
+	return pts
+}
+
 func main() {
-	maxIterations := 1000000
+	maxIterations := 100
 	// Generate matrices of random values.
 	input := randomData(4, 3)
 	weights1 := randomData(3, 5)
 	weights2 := randomData(5, 5)
 	weights3 := randomData(5, 2)
 	y := randomData(4, 2)
+
+	linePointsData := make([]float64, 0)
+	var plotingData plotter.XYs
 
 	for iterations := 0; iterations < maxIterations; iterations++ {
 
@@ -76,10 +94,12 @@ func main() {
 		outputError.Sub(output, y)
 
 		//Printing of the error per epoch
-		if iterations%100000 == 0 {
+		if iterations%1 == 0 {
 			//Computes the average error for the outputError for this epoch
-			fmt.Print("Error: ", averageError(outputError))
+			err := averageError(outputError)
+			fmt.Print("Error: ", err)
 			fmt.Print("\n")
+			linePointsData = append(linePointsData, err)
 		}
 
 		//Back Propagation
@@ -135,5 +155,34 @@ func main() {
 		weights1 = weights1New
 
 		//fmt.Print("H8")
+	}
+
+	//Make Error Plot
+	plotingData = createPoints(linePointsData)
+	p, err := plot.New()
+	if err != nil {
+		panic(err)
+	}
+	p.Title.Text = "Neural Network Error"
+	p.X.Label.Text = "Iterations"
+	p.Y.Label.Text = "Error"
+
+	// Make a line plotter with points and set its style.
+	lpLine, lpPoints, err := plotter.NewLinePoints(plotingData)
+	if err != nil {
+		panic(err)
+	}
+	lpLine.Color = color.RGBA{G: 255, A: 255}
+	lpPoints.Shape = draw.PyramidGlyph{}
+	lpPoints.Color = color.RGBA{R: 255, A: 255}
+
+	// Add the plotters to the plot, with a legend
+	// entry for each
+	p.Add(lpLine, lpPoints)
+	p.Legend.Add("line points", lpLine, lpPoints)
+
+	// Save the plot to a PNG file.
+	if err := p.Save(4*vg.Inch, 4*vg.Inch, "error.png"); err != nil {
+		panic(err)
 	}
 }
