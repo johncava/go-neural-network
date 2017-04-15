@@ -30,6 +30,23 @@ func randomData(rows int, cols int) *mat64.Dense {
 	return mat
 }
 
+//Function that takes the absolute value of each error and takes the average for the matrix
+func averageError(m *mat64.Dense) float64 {
+	rows, cols := m.Dims()
+	box := make([]float64, rows*cols)
+	for i := 0; i < rows; i++ {
+		for j := 0; j < cols; j++ {
+			box = append(box, m.At(i, j))
+		}
+	}
+	avg := 0.0
+	for item := range box {
+		avg = avg + math.Abs(box[item])
+	}
+	avg = avg / (float64(rows * cols))
+	return avg
+}
+
 func main() {
 	maxIterations := 1000000
 	// Generate matrices of random values.
@@ -60,7 +77,8 @@ func main() {
 
 		//Printing of the error per epoch
 		if iterations%100000 == 0 {
-			fmt.Print(mat64.Formatted(outputError))
+			//Computes the average error for the outputError for this epoch
+			fmt.Print("Error: ", averageError(outputError))
 			fmt.Print("\n")
 		}
 
